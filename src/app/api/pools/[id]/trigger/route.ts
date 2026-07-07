@@ -7,11 +7,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   try {
     if (body.action === 'vote') {
-      const event = voteEvent(id, body.eventId, body.participantId);
+      const event = await voteEvent(id, body.eventId, body.participantId);
       return NextResponse.json(event);
     }
     if (body.action === 'resolve') {
-      const result = resolveEvent(id, body.eventId, body.winnerId);
+      const result = await resolveEvent(id, body.eventId, body.winnerId);
       return NextResponse.json(result);
     }
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

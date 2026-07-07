@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "La Albiceleste Fan Wallet",
+  title: "POZO — Albiceleste Fan Wallet",
   description: "Self-custodial watch party pools for La Albiceleste — powered by Tether WDK",
   manifest: "/manifest.json",
   icons: {
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     apple: "/icon-192.png",
   },
   openGraph: {
-    title: "La Albiceleste Fan Wallet",
-    description: "POZO — Self-custodial watch party pools for Argentina fans",
+    title: "POZO — Albiceleste Fan Wallet",
+    description: "Self-custodial watch party pools for Argentina fans",
     type: "website",
   },
 };
@@ -44,20 +44,24 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="min-h-full flex flex-col">
-        <nav className="argentina-flag px-4 py-3 flex items-center justify-between shadow-sm">
-          <a href="/" className="flex items-center gap-2">
-            <span className="text-2xl">🇦🇷</span>
-            <span className="font-bold text-blue text-lg">Albiceleste Wallet</span>
+        <nav className="argentina-flag px-4 py-2.5 flex items-center justify-between shadow-sm sticky top-0 z-50">
+          <a href="/" className="flex items-center gap-2.5 group">
+            <img
+              src="/IMG/hero-icon.png"
+              alt="POZO"
+              className="w-8 h-8 rounded-xl group-hover:scale-110 transition-transform duration-300"
+            />
+            <span className="font-bold text-blue text-lg">POZO</span>
           </a>
-          <div className="flex items-center gap-4">
-            <a href="/wallet" className="text-sm font-medium text-blue hover:text-celeste-dark transition-colors">Wallet</a>
-            <a href="/pool" className="text-sm font-medium text-blue hover:text-celeste-dark transition-colors">POZO</a>
-            <a href="/asado" className="text-sm font-medium text-blue hover:text-celeste-dark transition-colors">Asado</a>
+          <div className="flex items-center gap-3">
+            <a href="/wallet" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Wallet</a>
+            <a href="/pool" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">POZO</a>
+            <a href="/asado" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Asado</a>
           </div>
         </nav>
         <main className="flex-1">{children}</main>
         <footer className="bg-blue text-white text-center text-xs py-4">
-          ⚽ La Albiceleste Fan Wallet — Tether Developers Cup 2026
+          ⚽ POZO — Tether Developers Cup 2026
         </footer>
       </body>
     </html>

@@ -4,7 +4,7 @@ import { createPool } from '@/lib/pools';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const pool = createPool({
+    const pool = await createPool({
       name: body.name || `Pozo ${new Date().toLocaleDateString('es-AR')}`,
       match: body.match || 'Argentina vs Egypt — R16',
       stake: Number(body.stake) || 5,

@@ -90,8 +90,10 @@ export default function AsadoPage() {
 
   if (loading) return (
     <div className="max-w-lg mx-auto px-4 py-20 text-center">
-      <div className="text-5xl mb-4 animate-pulse">🥩</div>
-      <p className="text-gray-500">Cargando...</p>
+      <div className="relative w-36 h-36 mx-auto mb-6 animate-float">
+        <img src="/IMG/empty-asado.png" alt="Cargando Asado" className="w-full h-full object-contain drop-shadow-lg" />
+      </div>
+      <p className="text-gray-500 animate-pulse">Preparando el fuego...</p>
     </div>
   );
 
@@ -99,13 +101,13 @@ export default function AsadoPage() {
     <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-blue">El Asado Fund</h1>
+          <h1 className="text-3xl font-black text-blue">El Asado Fund</h1>
           <p className="text-gray-500 text-sm">Dividí los gastos de la previa</p>
         </div>
         <div className="flex gap-2">
           {selectedBill && (
             <button onClick={() => { setSelectedBill(null); setSplits([]); }}
-              className="btn-primary text-sm bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1.5 rounded-lg">
+              className="btn-primary text-sm bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1.5 rounded-lg font-semibold transition-all">
               ← Volver
             </button>
           )}
@@ -114,55 +116,56 @@ export default function AsadoPage() {
       </div>
 
       {showCreate && (
-        <div className="card space-y-4 border-2 border-gold">
-          <h2 className="font-semibold text-lg">Nueva Cuenta</h2>
+        <div className="card space-y-4 border-2 border-gold/60 shadow-lg">
+          <h2 className="font-bold text-lg text-blue">Nueva Cuenta</h2>
           <input className="input-field" placeholder="Nombre (ej: Asado del 7/7)"
             value={billName} onChange={(e) => setBillName(e.target.value)} />
           <div className="space-y-2">
-            <label className="text-xs text-gray-500">Participantes</label>
+            <label className="text-xs font-semibold text-gray-500">Participantes</label>
             <div className="flex gap-2">
               <input className="input-field flex-1" placeholder="Nombre" value={participantInput}
                 onChange={(e) => setParticipantInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addParticipant()} />
               <button onClick={addParticipant} className="btn-primary text-sm px-4">+</button>
             </div>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {participants.map((p) => (
-                <span key={p} className="bg-celeste/20 text-blue text-xs px-2 py-1 rounded-full">
+                <span key={p} className="bg-celeste/20 text-blue text-xs font-medium px-2.5 py-1 rounded-full border border-celeste/20">
                   {p}
                   <button onClick={() => setParticipants(participants.filter((x) => x !== p))}
-                    className="ml-1 text-red-400">&times;</button>
+                    className="ml-1.5 text-red-400 hover:text-red-600 font-bold">&times;</button>
                 </span>
               ))}
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={createBill} disabled={participants.length < 2} className="btn-primary flex-1">
+            <button onClick={createBill} disabled={participants.length < 2}
+              className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed">
               Crear Cuenta
             </button>
             <button onClick={() => setShowCreate(false)}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 flex-1 rounded-lg font-semibold">Cancelar</button>
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 flex-1 rounded-xl font-semibold transition-all">Cancelar</button>
           </div>
         </div>
       )}
 
       {selectedBill ? (
         <div className="space-y-4">
-          <div className="card space-y-4">
-            <h2 className="font-bold text-lg">{selectedBill.name}</h2>
-            <div className="flex flex-wrap gap-1">
+          <div className="card space-y-4 hover:shadow-xl transition-all duration-300">
+            <h2 className="font-bold text-xl text-blue">{selectedBill.name}</h2>
+            <div className="flex flex-wrap gap-1.5">
               {selectedBill.participants.map((p) => (
-                <span key={p} className="bg-celeste/10 text-blue text-xs px-2 py-1 rounded-full">{p}</span>
+                <span key={p} className="bg-celeste/10 text-blue text-xs font-medium px-2.5 py-1 rounded-full border border-celeste/10">{p}</span>
               ))}
             </div>
 
             {selectedBill.expenses.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-gray-500">Gastos:</p>
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Gastos:</p>
                 {selectedBill.expenses.map((e) => (
-                  <div key={e.id} className="flex justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                  <div key={e.id} className="flex justify-between text-sm bg-gray-50 rounded-xl px-3 py-2.5">
                     <span>{e.label} <span className="text-gray-500">({e.paidBy})</span></span>
-                    <span className="font-medium">${e.amount}</span>
+                    <span className="font-bold">${e.amount.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -189,41 +192,44 @@ export default function AsadoPage() {
           </div>
 
           {splits.length > 0 && (
-            <div className="card space-y-3 border-2 border-green-200 bg-green-50">
+            <div className="card space-y-3 border-2 border-green-200 bg-gradient-to-br from-green-50 to-white">
               <h3 className="font-bold text-green-800">División de Gastos</h3>
               {splits.map((s) => (
-                <div key={s.participant} className="flex justify-between items-center text-sm">
+                <div key={s.participant} className="flex justify-between items-center text-sm bg-white/80 rounded-xl px-3 py-2.5">
                   <span className="font-medium">{s.participant}</span>
-                  <span className={s.owes > 0 ? "text-red-600 font-bold" : "text-green-600"}>
+                  <span className={s.owes > 0 ? "text-red-600 font-bold" : "text-green-600 font-semibold"}>
                     {s.owes > 0 ? `Debe $${s.owes.toFixed(2)}` : "Al día ✅"}
                   </span>
                 </div>
               ))}
-              <p className="text-xs text-gray-500 mt-2">
-                Liquidá con USDT directo desde tu Wallet.
-              </p>
+              <p className="text-xs text-gray-500 mt-2">Liquidá con USDT directo desde tu Wallet.</p>
               <a href="/wallet" className="btn-primary text-sm text-center block">Ir a Wallet</a>
             </div>
           )}
         </div>
       ) : bills.length === 0 ? (
-        <div className="card text-center py-12 space-y-3">
-          <div className="text-5xl">🥩</div>
-          <p className="text-gray-500">Todavía no hay cuentas</p>
+        <div className="card text-center py-12 space-y-4">
+          <div className="relative w-48 h-48 mx-auto">
+            <img src="/IMG/empty-asado.png" alt="No hay cuentas" className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <p className="text-gray-500 font-medium">Todavía no hay cuentas</p>
+            <p className="text-xs text-gray-400 mt-1">Creá la primera y empezá a dividir gastos</p>
+          </div>
           <button onClick={() => setShowCreate(true)} className="btn-primary text-sm">
             Crear primera cuenta
           </button>
         </div>
       ) : (
         bills.map((bill) => (
-          <div key={bill.id} className="card space-y-2 cursor-pointer hover:shadow-md transition-shadow"
+          <div key={bill.id} className="card space-y-2 cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
             onClick={() => { setSelectedBill(bill); setSplits([]); }}>
             <h3 className="font-bold text-blue">{bill.name}</h3>
             <div className="flex items-center gap-3 text-sm text-gray-500">
-              <span>{bill.expenses.length} gastos</span>
-              <span>{bill.participants.length} personas</span>
-              <span className="font-bold text-gold-dark">
-                ${bill.expenses.reduce((s, e) => s + e.amount, 0)} total
+              <span>{bill.expenses.length} {bill.expenses.length === 1 ? "gasto" : "gastos"}</span>
+              <span>{bill.participants.length} {bill.participants.length === 1 ? "persona" : "personas"}</span>
+              <span className="font-bold text-gold-dark ml-auto">
+                ${bill.expenses.reduce((s, e) => s + e.amount, 0).toFixed(2)} total
               </span>
             </div>
           </div>

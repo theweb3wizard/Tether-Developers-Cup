@@ -1,170 +1,301 @@
+import { supabase } from './supabase'
+
 export type PoolEvent = {
-  id: string;
-  label: string;
-  voted: string[];
-  confirmed: boolean;
-  resolved: boolean;
-  winner?: string;
-};
+  id: string
+  label: string
+  voted: string[]
+  confirmed: boolean
+  resolved: boolean
+  winner?: string
+}
 
 export type Participant = {
-  id: string;
-  username: string;
-  address: string;
-  staked: number;
-};
+  id: string
+  username: string
+  address: string
+  staked: number
+}
 
 export type Pool = {
-  id: string;
-  name: string;
-  match: string;
-  stake: number;
-  totalPool: number;
-  capacity: number;
-  status: "open" | "locked" | "active" | "settled";
-  participants: Participant[];
-  events: PoolEvent[];
-  created: number;
-  hostId: string;
-};
-
-const pools = new Map<string, Pool>();
-
-export function createPool(data: {
-  name: string;
-  match: string;
-  stake: number;
-  capacity: number;
-  events: string[];
-  hostId: string;
-  hostUsername: string;
-  hostAddress: string;
-}): Pool {
-  const pool: Pool = {
-    id: crypto.randomUUID().slice(0, 8),
-    name: data.name,
-    match: data.match,
-    stake: data.stake,
-    totalPool: data.stake,
-    capacity: data.capacity,
-    status: "open",
-    participants: [
-      {
-        id: data.hostId,
-        username: data.hostUsername,
-        address: data.hostAddress,
-        staked: data.stake,
-      },
-    ],
-    events: data.events.map((e) => ({
-      id: crypto.randomUUID().slice(0, 6),
-      label: e,
-      voted: [],
-      confirmed: false,
-      resolved: false,
-    })),
-    created: Date.now(),
-    hostId: data.hostId,
-  };
-  pools.set(pool.id, pool);
-  return pool;
+  id: string
+  name: string
+  match: string
+  stake: number
+  totalPool: number
+  capacity: number
+  status: 'open' | 'locked' | 'active' | 'settled'
+  participants: Participant[]
+  events: PoolEvent[]
+  created: number
+  hostId: string
 }
 
-export function getPool(id: string): Pool | undefined {
-  return pools.get(id);
+type PoolRow = {
+  id: string
+  name: string
+  match_name: string
+  stake_amount: number
+  total_pool: number
+  capacity: number
+  status: 'open' | 'locked' | 'active' | 'settled'
+  participants: Participant[]
+  events: PoolEvent[]
+  host_id: string
+  created_at: string
 }
 
-export function listPools(): Pool[] {
-  return Array.from(pools.values()).sort((a, b) => b.created - a.created);
+function rowToPool(row: PoolRow): Pool {
+  return {
+    id: row.id,
+    name: row.name,
+    match: row.match_name,
+    stake: Number(row.stake_amount),
+    totalPool: Number(row.total_pool),
+    capacity: row.capacity,
+    status: row.status,
+    participants: row.participants || [],
+    events: row.events || [],
+    created: new Date(row.created_at).getTime(),
+    hostId: row.host_id,
+  }
 }
 
-export function joinPool(
+export async function createPool(data: {
+  name: string
+  match: string
+  stake: number
+  capacity: number
+  events: string[]
+  hostId: string
+  hostUsername: string
+  hostAddress: string
+}): Promise<Pool> {
+  const id = crypto.randomUUID().slice(0, 8)
+  const poolEvents: PoolEvent[] = data.events.map((e) => ({
+    id: crypto.randomUUID().slice(0, 6),
+    label: e,
+    voted: [],
+    confirmed: false,
+    resolved: false,
+  }))
+
+  const { data: row, error } = await supabase
+    .from('pools')
+    .insert({
+      id,
+      name: data.name,
+      match_name: data.match,
+      stake_amount: data.stake,
+      total_pool: data.stake,
+      capacity: data.capacity,
+      status: 'open',
+      host_id: data.hostId,
+      participants: [
+        {
+          id: data.hostId,
+          username: data.hostUsername,
+          address: data.hostAddress,
+          staked: data.stake,
+        },
+      ],
+      events: poolEvents,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return rowToPool(row as unknown as PoolRow)
+}
+
+export async function getPool(id: string): Promise<Pool | null> {
+  const { data, error } = await supabase
+    .from('pools')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) return null
+  return rowToPool(data as unknown as PoolRow)
+}
+
+export async function listPools(): Promise<Pool[]> {
+  const { data, error } = await supabase
+    .from('pools')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return (data as unknown as PoolRow[]).map(rowToPool)
+}
+
+export async function joinPool(
   poolId: string,
   participant: { id: string; username: string; address: string }
-): Pool {
-  const pool = pools.get(poolId);
-  if (!pool) throw new Error("POZO not found");
-  if (pool.participants.length >= pool.capacity)
-    throw new Error("POZO is full");
-  if (pool.status !== "open") throw new Error("POZO is not open");
+): Promise<Pool> {
+  const { data: current, error: fetchError } = await supabase
+    .from('pools')
+    .select('*')
+    .eq('id', poolId)
+    .single()
 
-  pool.participants.push({ ...participant, staked: pool.stake });
-  pool.totalPool += pool.stake;
-  return pool;
+  if (fetchError) throw new Error('POZO not found')
+
+  const pool = rowToPool(current as unknown as PoolRow)
+  if (pool.participants.length >= pool.capacity) throw new Error('POZO is full')
+  if (pool.status !== 'open') throw new Error('POZO is not open')
+
+  const updatedParticipants = [
+    ...pool.participants,
+    { ...participant, staked: pool.stake },
+  ]
+  const updatedTotal = pool.totalPool + pool.stake
+
+  const { data: updated, error: updateError } = await supabase
+    .from('pools')
+    .update({
+      participants: updatedParticipants,
+      total_pool: updatedTotal,
+    })
+    .eq('id', poolId)
+    .select()
+    .single()
+
+  if (updateError) throw new Error(updateError.message)
+  return rowToPool(updated as unknown as PoolRow)
 }
 
-export function lockPool(poolId: string): Pool {
-  const pool = pools.get(poolId);
-  if (!pool) throw new Error("POZO not found");
-  if (pool.participants.length < 2) throw new Error("Need at least 2 participants");
-  pool.status = "locked";
-  return pool;
+export async function lockPool(poolId: string): Promise<Pool> {
+  const pool = await getPool(poolId)
+  if (!pool) throw new Error('POZO not found')
+  if (pool.participants.length < 2) throw new Error('Need at least 2 participants')
+
+  const { data, error } = await supabase
+    .from('pools')
+    .update({ status: 'locked', locked_at: new Date().toISOString() })
+    .eq('id', poolId)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return rowToPool(data as unknown as PoolRow)
 }
 
-export function startPool(poolId: string): Pool {
-  const pool = pools.get(poolId);
-  if (!pool) throw new Error("POZO not found");
-  pool.status = "active";
-  return pool;
+export async function startPool(poolId: string): Promise<Pool> {
+  const { data, error } = await supabase
+    .from('pools')
+    .update({ status: 'active' })
+    .eq('id', poolId)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return rowToPool(data as unknown as PoolRow)
 }
 
-export function voteEvent(
+export async function voteEvent(
   poolId: string,
   eventId: string,
   participantId: string
-): PoolEvent {
-  const pool = pools.get(poolId);
-  if (!pool) throw new Error("POZO not found");
+): Promise<PoolEvent> {
+  const { data: current, error: fetchError } = await supabase
+    .from('pools')
+    .select('events, participants')
+    .eq('id', poolId)
+    .single()
 
-  const event = pool.events.find((e) => e.id === eventId);
-  if (!event) throw new Error("Event not found");
-  if (event.resolved) throw new Error("Event already resolved");
-  if (event.voted.includes(participantId))
-    throw new Error("Already voted");
+  if (fetchError) throw new Error('POZO not found')
 
-  event.voted.push(participantId);
+  const events = (current.events || []) as PoolEvent[]
+  const event = events.find((e) => e.id === eventId)
+  if (!event) throw new Error('Event not found')
+  if (event.resolved) throw new Error('Event already resolved')
+  if (event.voted.includes(participantId)) throw new Error('Already voted')
 
-  const majority = Math.floor(pool.participants.length / 2) + 1;
+  event.voted.push(participantId)
+
+  const participantCount = (current.participants || []).length
+  const majority = Math.floor(participantCount / 2) + 1
   if (event.voted.length >= majority) {
-    event.confirmed = true;
+    event.confirmed = true
   }
 
-  return event;
+  const { data: updated, error: updateError } = await supabase
+    .from('pools')
+    .update({ events })
+    .eq('id', poolId)
+    .select('events')
+    .single()
+
+  if (updateError) throw new Error(updateError.message)
+  const updatedEvents = (updated.events || []) as PoolEvent[]
+  const updatedEvent = updatedEvents.find((e) => e.id === eventId)
+  if (!updatedEvent) throw new Error('Event not found after update')
+  return updatedEvent
 }
 
-export function resolveEvent(
+export async function resolveEvent(
   poolId: string,
   eventId: string,
   winnerParticipantId: string
-): { event: PoolEvent; payout: number } {
-  const pool = pools.get(poolId);
-  if (!pool) throw new Error("POZO not found");
+): Promise<{ event: PoolEvent; payout: number }> {
+  const { data: current, error: fetchError } = await supabase
+    .from('pools')
+    .select('*')
+    .eq('id', poolId)
+    .single()
 
-  const event = pool.events.find((e) => e.id === eventId);
-  if (!event) throw new Error("Event not found");
-  if (!event.confirmed) throw new Error("Event not confirmed by group");
-  if (event.resolved) throw new Error("Event already resolved");
+  if (fetchError) throw new Error('POZO not found')
 
-  event.resolved = true;
-  event.winner = winnerParticipantId;
+  const pool = rowToPool(current as unknown as PoolRow)
+  const event = pool.events.find((e) => e.id === eventId)
+  if (!event) throw new Error('Event not found')
+  if (!event.confirmed) throw new Error('Event not confirmed by group')
+  if (event.resolved) throw new Error('Event already resolved')
 
-  const payout = Math.floor((pool.totalPool * 0.9) / pool.events.filter((e) => e.resolved).length);
+  event.resolved = true
+  event.winner = winnerParticipantId
 
-  return { event, payout };
+  const resolvedCount = pool.events.filter((e) => e.resolved).length
+  const payout = Math.floor((pool.totalPool * 0.9) / resolvedCount)
+
+  const { error: updateError } = await supabase
+    .from('pools')
+    .update({ events: pool.events })
+    .eq('id', poolId)
+
+  if (updateError) throw new Error(updateError.message)
+  return { event, payout }
 }
 
-export function settlePool(poolId: string): { pool: Pool; payouts: { participantId: string; amount: number }[] } {
-  const pool = pools.get(poolId);
-  if (!pool) throw new Error("POZO not found");
+export async function settlePool(
+  poolId: string
+): Promise<{
+  pool: Pool
+  payouts: { participantId: string; amount: number }[]
+}> {
+  const pool = await getPool(poolId)
+  if (!pool) throw new Error('POZO not found')
 
-  pool.status = "settled";
-
-  const resolvedEvents = pool.events.filter((e) => e.resolved);
+  const resolvedEvents = pool.events.filter((e) => e.resolved)
   const payouts = pool.participants.map((p) => {
-    const wins = resolvedEvents.filter((e) => e.winner === p.id).length;
-    const amount = wins > 0 ? Math.floor((pool.totalPool * 0.9 * wins) / resolvedEvents.length) : 0;
-    return { participantId: p.id, amount };
-  });
+    const wins = resolvedEvents.filter((e) => e.winner === p.id).length
+    const amount =
+      wins > 0
+        ? Math.floor((pool.totalPool * 0.9 * wins) / resolvedEvents.length)
+        : 0
+    return { participantId: p.id, amount }
+  })
 
-  return { pool, payouts };
+  const { data, error } = await supabase
+    .from('pools')
+    .update({
+      status: 'settled',
+      settled_at: new Date().toISOString(),
+    })
+    .eq('id', poolId)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return { pool: rowToPool(data as unknown as PoolRow), payouts }
 }

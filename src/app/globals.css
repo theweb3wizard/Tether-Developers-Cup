@@ -89,3 +89,12 @@ body {
   border-color: var(--celeste);
   box-shadow: 0 0 0 3px rgba(117, 170, 219, 0.2);
 }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
