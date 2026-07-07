@@ -13,6 +13,7 @@ export async function POST(req: Request) {
       hostId: body.hostId || 'host-1',
       hostUsername: body.hostUsername || 'Cebolla',
       hostAddress: body.hostAddress || '0x...',
+      hostCabala: body.hostCabala,
     });
     return NextResponse.json(pool, { status: 201 });
   } catch (error) {
