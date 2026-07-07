@@ -52,6 +52,7 @@ export default function RootLayout({
           <div className="flex items-center gap-4">
             <a href="/wallet" className="text-sm font-medium text-blue hover:text-celeste-dark transition-colors">Wallet</a>
             <a href="/pool" className="text-sm font-medium text-blue hover:text-celeste-dark transition-colors">POZO</a>
+            <a href="/asado" className="text-sm font-medium text-blue hover:text-celeste-dark transition-colors">Asado</a>
           </div>
         </nav>
         <main className="flex-1">{children}</main>

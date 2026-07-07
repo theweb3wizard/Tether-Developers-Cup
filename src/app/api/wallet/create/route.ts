@@ -6,10 +6,6 @@ export async function POST() {
     const wallet = await createWallet();
     return NextResponse.json(wallet);
   } catch (error) {
-    console.error('Wallet creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create wallet', details: String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create wallet', details: String(error) }, { status: 500 });
   }
 }
