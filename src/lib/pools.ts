@@ -15,6 +15,7 @@ export type Participant = {
   username: string
   address: string
   staked: number
+  cabala?: string
 }
 
 export type Pool = {
@@ -73,6 +74,7 @@ export async function createPool(data: {
   hostId: string
   hostUsername: string
   hostAddress: string
+  hostCabala?: string
 }): Promise<Pool> {
   const id = crypto.randomUUID().slice(0, 8)
   const poolEvents: PoolEvent[] = data.events.map((e) => ({
@@ -96,7 +98,7 @@ export async function createPool(data: {
       status: 'open',
       host_id: data.hostId,
       participants: [
-        { id: data.hostId, username: data.hostUsername, address: data.hostAddress, staked: data.stake },
+        { id: data.hostId, username: data.hostUsername, address: data.hostAddress, staked: data.stake, cabala: data.hostCabala },
       ],
       events: poolEvents,
     })
@@ -129,7 +131,7 @@ export async function listPools(status?: string): Promise<Pool[]> {
 
 export async function joinPool(
   poolId: string,
-  participant: { id: string; username: string; address: string }
+    participant: { id: string; username: string; address: string; cabala?: string }
 ): Promise<Pool> {
   const { data: current, error: fetchError } = await supabase
     .from('pools')
@@ -145,7 +147,7 @@ export async function joinPool(
 
   const updatedParticipants = [
     ...pool.participants,
-    { ...participant, staked: pool.stake },
+    { ...participant, staked: pool.stake, cabala: participant.cabala },
   ]
   const updatedTotal = pool.totalPool + pool.stake
 

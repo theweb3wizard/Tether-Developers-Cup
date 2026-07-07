@@ -18,6 +18,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         id: body.participantId || `user-${Date.now()}`,
         username: body.username || 'Anonymous',
         address: body.address || '0x...',
+        cabala: body.cabala,
       }));
     }
     if (body.action === 'lock') return NextResponse.json(await lockPool(id));

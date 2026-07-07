@@ -1,32 +1,40 @@
-# 🇦🇷 POZO — Self-Custodial Watch Party Pools
+# POZO — Self-Custodial Watch Party Pools
 
-**Tether Developers Cup 2026 — WDK + Pears Track**
+**Tether Developers Cup 2026 — WDK Track**
 
-POZO lets Argentina fans create self-custodial USDT pools for World Cup watch parties. Create a pool, invite friends, predict in-game events (goals, cards, saves), and settle instantly — no intermediaries, no gas fees, full self-custody.
+POZO lets Argentina fans create **self-custodial USDT pools** for World Cup watch parties. Create a pool, invite friends, predict in-game events (goals, cards, saves), and settle instantly — no intermediaries, no gas fees, full self-custody.
 
 ---
 
 ## Features
 
-### ✅ Phase 0 — MVP (Live)
-- **Self-custodial wallet** — Create/import wallets via Tether WDK (EVM, Sepolia testnet)
-- **POZO creation** — Multi-party pools with configurable stake, capacity, and trigger events
-- **PWA support** — Installable, works offline
+### Phase 0 — MVP
+- Self-custodial wallet via Tether WDK (EVM, Sepolia testnet)
+- POZO creation with configurable stake, capacity, and trigger events
+- PWA manifest (installable, theme-color, icons)
 
-### ✅ Phase 1 — Core (Complete)
-- **Send/receive USDT** — Transfer tokens via WDK from your self-custodial wallet
-- **Multi-party fund locking** — All participants deposit, funds locked until match events
-- **Trigger event system** — Goals, cards, saves as configurable pool triggers
-- **Group consensus voting** — Majority-tap verification (no oracle needed)
-- **USDt distribution engine** — Winners auto-receive on consensus
-- **El Asado Fund** — Watch party expense splitter (asado, fernet, streaming)
-- **@username identities** — Human-readable names, no hex addresses
+### Phase 1 — Core
+- Send/receive USDT via WDK
+- Multi-party POZO fund locking
+- Trigger event system (goals, cards, saves as configurable pool events)
+- Group consensus voting — majority-tap verification (no oracle)
+- USDt distribution engine — winners determined on consensus
+- El Asado Fund — watch party expense splitter
+- @username identities — human-readable names, no hex addresses
+- Supabase persistence (Postgres, JSONB columns, RLS)
 
-### 🔜 Phase 2 — Polish
-- Illustrated cábala onboarding
-- Dibu save alerts + micro-bids
-- Pool history & stats
-- Pears P2P (Hyperswarm) for decentralized room discovery
+### Phase 2 — Polish
+- Illustrated cábala onboarding flow (`/onboarding`)
+- Identity persistence via localStorage
+- Toast notification system
+- Skeleton loaders on all data pages
+- Supabase Realtime subscriptions for live voting
+- Pool history & stats with ranking (`/history`)
+- Micro-bid system on event voting
+- Share POZO link (clipboard copy)
+- Browser notifications for event updates
+- Direct pool detail page (`/pool/[id]`)
+- PWA service worker (offline cache + install prompt)
 
 ---
 
@@ -34,10 +42,10 @@ POZO lets Argentina fans create self-custodial USDT pools for World Cup watch pa
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 16, Tailwind CSS, TypeScript |
-| PWA | `next-pwa`, Service Worker, Manifest |
+| Frontend | Next.js 16, Tailwind CSS v4, TypeScript |
+| Database | Supabase (Postgres, JSONB, RLS) |
 | Wallets | `@tetherto/wdk`, `@tetherto/wdk-wallet-evm` |
-| P2P | `hyperswarm` (Phase 2) |
+| PWA | Service worker, Web Manifest |
 | Styling | Argentina flag palette (#75AADB, #FCBF49, #003DA5) |
 | Language | Español (Argentine dialect) |
 
@@ -49,12 +57,28 @@ POZO lets Argentina fans create self-custodial USDT pools for World Cup watch pa
 
 - Node.js 20+
 - npm
+- Supabase project with the schema from `supabase-migration.sql`
+
+### Environment Variables
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in your Supabase project URL and anon key from your Supabase dashboard (Settings → API).
 
 ### Install
 
 ```bash
 npm install
 ```
+
+> **Windows note:** npm install can be flaky (ECONNRESET, EPERM). If it fails:
+> ```powershell
+> npm config set registry https://registry.npmmirror.com
+> npm install
+> npm config set registry https://registry.npmjs.org
+> ```
 
 ### Run
 
@@ -72,15 +96,31 @@ npm run build
 
 ---
 
+## Database
+
+The app uses Supabase. Run `supabase-migration.sql` in your Supabase SQL Editor to create:
+
+- **users** — username, wallet_address, cábala, timestamps
+- **pools** — JSONB `participants` and `events` columns, status enum
+- **asado_bills** — TEXT[] participants, JSONB expenses
+
+**After migration**, enable Realtime on the `pools` table: Supabase Dashboard → Database → Replication → toggle `pools`.
+
+---
+
 ## Architecture
 
 ```
-PWA (Next.js)
+PWA (Next.js 16)
   ↕ REST API
 Node.js Backend
-  ├── @tetherto/wdk          → Wallet ops, USDt transfers
-  ├── lib/pools.ts            → Pool logic, fund locking, consensus
-  └── lib/asado.ts            → Expense splitting
+  └── lib/
+       ├── wdk.ts          → Wallet ops, USDt transfers
+       ├── pools.ts        → Pool logic, fund locking, consensus
+       ├── asado.ts        → Expense splitting
+       ├── supabase.ts     → DB client
+       ├── identity.ts     → localStorage identity
+       └── notifications.ts → Browser Notification API
 ```
 
 ### API Routes
@@ -90,7 +130,7 @@ Node.js Backend
 | `/api/wallet/create` | POST | Generate seed phrase + EVM wallet |
 | `/api/wallet/balance` | GET | Get address, ETH & USDT balance |
 | `/api/wallet/send` | POST | Send USDT via WDK |
-| `/api/pools` | GET | List all POZOs |
+| `/api/pools` | GET | List all POZOs (`?status=settled` to filter) |
 | `/api/pools/create` | POST | Create new POZO |
 | `/api/pools/[id]` | GET | Get POZO details |
 | `/api/pools/[id]` | PATCH | Join, lock, or start POZO |
@@ -98,18 +138,30 @@ Node.js Backend
 | `/api/pools/[id]/distribute` | POST | Settle POZO, distribute funds |
 | `/api/asado` | GET/POST | Create & manage expense splits |
 
+### Pages
+
+| Route | Page |
+|---|---|
+| `/` | Landing with hero, 3-card nav, match callout |
+| `/onboarding` | 3-step: welcome → identity → cábala picker |
+| `/wallet` | Create/load wallet, dashboard, send USDT |
+| `/pool` | Pool list, create, detail with voting flow |
+| `/pool/[id]` | Direct pool detail (shared links) |
+| `/history` | Settled pools + ranking |
+| `/asado` | Expense splitter |
+
 ---
 
 ## POZO Flow
 
 1. **Create** — Host sets name, stake (USDT), capacity, trigger events
-2. **Invite** — Share POZO link/QR with friends
+2. **Invite** — Share POZO link with friends
 3. **Join** — Friends deposit stake from their wallets
 4. **Lock** — Host locks pool at match start
 5. **Watch** — Events fire (goal, card, save)
 6. **Vote** — Group confirms events via majority tap
 7. **Resolve** — Host declares winner per event
-8. **Settle** — WDK distributes USDT to winners automatically
+8. **Settle** — Funds distributed to winners
 
 ---
 
@@ -121,9 +173,9 @@ Node.js Backend
 
 ## Submission
 
-- **Track**: WDK + Pears
+- **Track**: WDK
 - **Team**: Solo
-- **Country**: Argentina 🇦🇷
+- **Country**: Argentina
 - **License**: MIT
 
 ---
@@ -133,3 +185,4 @@ Node.js Backend
 - [Tether WDK](https://docs.wallet.tether.io) — Wallet Development Kit
 - [Next.js](https://nextjs.org) — React framework
 - [Tailwind CSS](https://tailwindcss.com) — Styling
+- [Supabase](https://supabase.com) — Database & Realtime

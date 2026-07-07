@@ -18,11 +18,12 @@ type SplitInfo = {
 };
 
 export default function AsadoPage() {
+  const identity = loadIdentity();
   const [bills, setBills] = useState<AsadoBill[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [billName, setBillName] = useState('');
-  const [participantInput, setParticipantInput] = useState('');
+  const [participantInput, setParticipantInput] = useState(identity?.username || '');
   const [participants, setParticipants] = useState<string[]>([]);
   const [selectedBill, setSelectedBill] = useState<AsadoBill | null>(null);
   const [splits, setSplits] = useState<SplitInfo[]>([]);
@@ -30,7 +31,6 @@ export default function AsadoPage() {
   const [newExpenseAmount, setNewExpenseAmount] = useState('');
   const [newExpensePaidBy, setNewExpensePaidBy] = useState('');
   const { toast } = useToast();
-  const identity = loadIdentity();
 
   const fetchBills = useCallback(async () => {
     const res = await fetch('/api/asado');
