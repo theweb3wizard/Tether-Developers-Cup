@@ -7,6 +7,7 @@ export type PoolEvent = {
   confirmed: boolean
   resolved: boolean
   winner?: string
+  bidAmount?: number
 }
 
 export type Participant = {
@@ -28,6 +29,7 @@ export type Pool = {
   events: PoolEvent[]
   created: number
   hostId: string
+  settledAt?: string
 }
 
 type PoolRow = {
@@ -42,6 +44,7 @@ type PoolRow = {
   events: PoolEvent[]
   host_id: string
   created_at: string
+  settled_at?: string | null
 }
 
 function rowToPool(row: PoolRow): Pool {
@@ -54,9 +57,10 @@ function rowToPool(row: PoolRow): Pool {
     capacity: row.capacity,
     status: row.status,
     participants: row.participants || [],
-    events: row.events || [],
+    events: (row.events || []).map((e) => ({ ...e, bidAmount: e.bidAmount || 0 })),
     created: new Date(row.created_at).getTime(),
     hostId: row.host_id,
+    settledAt: row.settled_at ?? undefined,
   }
 }
 
@@ -77,6 +81,7 @@ export async function createPool(data: {
     voted: [],
     confirmed: false,
     resolved: false,
+    bidAmount: 0,
   }))
 
   const { data: row, error } = await supabase
@@ -91,12 +96,7 @@ export async function createPool(data: {
       status: 'open',
       host_id: data.hostId,
       participants: [
-        {
-          id: data.hostId,
-          username: data.hostUsername,
-          address: data.hostAddress,
-          staked: data.stake,
-        },
+        { id: data.hostId, username: data.hostUsername, address: data.hostAddress, staked: data.stake },
       ],
       events: poolEvents,
     })
@@ -118,12 +118,11 @@ export async function getPool(id: string): Promise<Pool | null> {
   return rowToPool(data as unknown as PoolRow)
 }
 
-export async function listPools(): Promise<Pool[]> {
-  const { data, error } = await supabase
-    .from('pools')
-    .select('*')
-    .order('created_at', { ascending: false })
+export async function listPools(status?: string): Promise<Pool[]> {
+  let query = supabase.from('pools').select('*').order('created_at', { ascending: false })
+  if (status) query = query.eq('status', status)
 
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return (data as unknown as PoolRow[]).map(rowToPool)
 }
@@ -152,10 +151,7 @@ export async function joinPool(
 
   const { data: updated, error: updateError } = await supabase
     .from('pools')
-    .update({
-      participants: updatedParticipants,
-      total_pool: updatedTotal,
-    })
+    .update({ participants: updatedParticipants, total_pool: updatedTotal })
     .eq('id', poolId)
     .select()
     .single()
@@ -195,7 +191,8 @@ export async function startPool(poolId: string): Promise<Pool> {
 export async function voteEvent(
   poolId: string,
   eventId: string,
-  participantId: string
+  participantId: string,
+  bidAmount?: number
 ): Promise<PoolEvent> {
   const { data: current, error: fetchError } = await supabase
     .from('pools')
@@ -212,6 +209,9 @@ export async function voteEvent(
   if (event.voted.includes(participantId)) throw new Error('Already voted')
 
   event.voted.push(participantId)
+  if (bidAmount && bidAmount > 0) {
+    event.bidAmount = (event.bidAmount || 0) + bidAmount
+  }
 
   const participantCount = (current.participants || []).length
   const majority = Math.floor(participantCount / 2) + 1
@@ -279,19 +279,15 @@ export async function settlePool(
   const resolvedEvents = pool.events.filter((e) => e.resolved)
   const payouts = pool.participants.map((p) => {
     const wins = resolvedEvents.filter((e) => e.winner === p.id).length
-    const amount =
-      wins > 0
-        ? Math.floor((pool.totalPool * 0.9 * wins) / resolvedEvents.length)
-        : 0
+    const amount = wins > 0
+      ? Math.floor((pool.totalPool * 0.9 * wins) / resolvedEvents.length)
+      : 0
     return { participantId: p.id, amount }
   })
 
   const { data, error } = await supabase
     .from('pools')
-    .update({
-      status: 'settled',
-      settled_at: new Date().toISOString(),
-    })
+    .update({ status: 'settled', settled_at: new Date().toISOString() })
     .eq('id', poolId)
     .select()
     .single()

@@ -1,6 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
+import { loadIdentity, saveIdentity } from '@/lib/identity';
+import { useToast } from '@/components/Toast';
 
 type AsadoBill = {
   id: string;
@@ -19,17 +21,19 @@ export default function AsadoPage() {
   const [bills, setBills] = useState<AsadoBill[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [billName, setBillName] = useState("");
-  const [participantInput, setParticipantInput] = useState("");
+  const [billName, setBillName] = useState('');
+  const [participantInput, setParticipantInput] = useState('');
   const [participants, setParticipants] = useState<string[]>([]);
   const [selectedBill, setSelectedBill] = useState<AsadoBill | null>(null);
   const [splits, setSplits] = useState<SplitInfo[]>([]);
-  const [newExpenseLabel, setNewExpenseLabel] = useState("");
-  const [newExpenseAmount, setNewExpenseAmount] = useState("");
-  const [newExpensePaidBy, setNewExpensePaidBy] = useState("");
+  const [newExpenseLabel, setNewExpenseLabel] = useState('');
+  const [newExpenseAmount, setNewExpenseAmount] = useState('');
+  const [newExpensePaidBy, setNewExpensePaidBy] = useState('');
+  const { toast } = useToast();
+  const identity = loadIdentity();
 
   const fetchBills = useCallback(async () => {
-    const res = await fetch("/api/asado");
+    const res = await fetch('/api/asado');
     setBills(await res.json());
     setLoading(false);
   }, []);
@@ -37,34 +41,36 @@ export default function AsadoPage() {
   useEffect(() => { fetchBills(); }, [fetchBills]);
 
   const createBill = async () => {
-    if (participants.length < 2) return;
-    const res = await fetch("/api/asado", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "create", name: billName || "Asado", participants }),
+    if (participants.length < 2) { toast('Necesitás al menos 2 participantes', 'error'); return; }
+    const res = await fetch('/api/asado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'create', name: billName || 'Asado', participants }),
     });
     const data = await res.json();
     setSelectedBill(data);
     setShowCreate(false);
-    setBillName("");
+    setBillName('');
     setParticipants([]);
     fetchBills();
+    toast('Cuenta creada!', 'success');
   };
 
   const addParticipant = () => {
     if (participantInput && !participants.includes(participantInput)) {
       setParticipants([...participants, participantInput]);
-      setParticipantInput("");
+      setParticipantInput('');
     }
   };
 
   const addExpense = async () => {
     if (!selectedBill || !newExpenseLabel || !newExpenseAmount || !newExpensePaidBy) return;
-    const res = await fetch("/api/asado", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    if (Number(newExpenseAmount) <= 0) { toast('Monto inválido', 'error'); return; }
+    const res = await fetch('/api/asado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: "add-expense",
+        action: 'add-expense',
         billId: selectedBill.id,
         label: newExpenseLabel,
         amount: Number(newExpenseAmount),
@@ -73,29 +79,37 @@ export default function AsadoPage() {
     });
     const data = await res.json();
     setSelectedBill(data);
-    setNewExpenseLabel("");
-    setNewExpenseAmount("");
-    setNewExpensePaidBy("");
+    setNewExpenseLabel('');
+    setNewExpenseAmount('');
+    setNewExpensePaidBy('');
+    toast('Gasto agregado!', 'success');
   };
 
   const calcSplits = async () => {
     if (!selectedBill) return;
-    const res = await fetch("/api/asado", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "split", billId: selectedBill.id }),
+    const res = await fetch('/api/asado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'split', billId: selectedBill.id }),
     });
     setSplits(await res.json());
+    toast('División calculada!', 'success');
   };
 
-  if (loading) return (
-    <div className="max-w-lg mx-auto px-4 py-20 text-center">
-      <div className="relative w-36 h-36 mx-auto mb-6 animate-float">
-        <img src="/IMG/empty-asado.png" alt="Cargando Asado" className="w-full h-full object-contain drop-shadow-lg" />
+  if (loading) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-8 space-y-4">
+        <div className="skeleton h-8 w-40 rounded-lg mb-2" />
+        <div className="skeleton h-4 w-52 rounded-lg mb-6" />
+        {[1, 2].map((i) => (
+          <div key={i} className="card space-y-3">
+            <div className="skeleton h-5 w-36 rounded-lg" />
+            <div className="skeleton h-3 w-48 rounded-lg" />
+          </div>
+        ))}
       </div>
-      <p className="text-gray-500 animate-pulse">Preparando el fuego...</p>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
@@ -125,7 +139,7 @@ export default function AsadoPage() {
             <div className="flex gap-2">
               <input className="input-field flex-1" placeholder="Nombre" value={participantInput}
                 onChange={(e) => setParticipantInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addParticipant()} />
+                onKeyDown={(e) => e.key === 'Enter' && addParticipant()} />
               <button onClick={addParticipant} className="btn-primary text-sm px-4">+</button>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -184,7 +198,8 @@ export default function AsadoPage() {
                 ))}
               </select>
             </div>
-            <button onClick={addExpense} className="btn-primary w-full text-sm">Agregar Gasto</button>
+            <button onClick={addExpense} disabled={!newExpenseLabel || !newExpenseAmount || !newExpensePaidBy || Number(newExpenseAmount) <= 0}
+              className="btn-primary w-full text-sm disabled:opacity-50 disabled:cursor-not-allowed">Agregar Gasto</button>
 
             {selectedBill.expenses.length > 0 && (
               <button onClick={calcSplits} className="btn-gold w-full text-sm">Calcular División</button>
@@ -197,8 +212,8 @@ export default function AsadoPage() {
               {splits.map((s) => (
                 <div key={s.participant} className="flex justify-between items-center text-sm bg-white/80 rounded-xl px-3 py-2.5">
                   <span className="font-medium">{s.participant}</span>
-                  <span className={s.owes > 0 ? "text-red-600 font-bold" : "text-green-600 font-semibold"}>
-                    {s.owes > 0 ? `Debe $${s.owes.toFixed(2)}` : "Al día ✅"}
+                  <span className={s.owes > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-semibold'}>
+                    {s.owes > 0 ? `Debe $${s.owes.toFixed(2)}` : 'Al día ✅'}
                   </span>
                 </div>
               ))}
@@ -216,9 +231,7 @@ export default function AsadoPage() {
             <p className="text-gray-500 font-medium">Todavía no hay cuentas</p>
             <p className="text-xs text-gray-400 mt-1">Creá la primera y empezá a dividir gastos</p>
           </div>
-          <button onClick={() => setShowCreate(true)} className="btn-primary text-sm">
-            Crear primera cuenta
-          </button>
+          <button onClick={() => setShowCreate(true)} className="btn-primary text-sm">Crear primera cuenta</button>
         </div>
       ) : (
         bills.map((bill) => (
@@ -226,8 +239,8 @@ export default function AsadoPage() {
             onClick={() => { setSelectedBill(bill); setSplits([]); }}>
             <h3 className="font-bold text-blue">{bill.name}</h3>
             <div className="flex items-center gap-3 text-sm text-gray-500">
-              <span>{bill.expenses.length} {bill.expenses.length === 1 ? "gasto" : "gastos"}</span>
-              <span>{bill.participants.length} {bill.participants.length === 1 ? "persona" : "personas"}</span>
+              <span>{bill.expenses.length} {bill.expenses.length === 1 ? 'gasto' : 'gastos'}</span>
+              <span>{bill.participants.length} {bill.participants.length === 1 ? 'persona' : 'personas'}</span>
               <span className="font-bold text-gold-dark ml-auto">
                 ${bill.expenses.reduce((s, e) => s + e.amount, 0).toFixed(2)} total
               </span>
