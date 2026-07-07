@@ -16,6 +16,9 @@ export default function Home() {
           <p className="text-lg md:text-xl text-blue/70 max-w-md mx-auto font-medium">
             Pools auto-custodios para la Scaloneta. Creá tu POZO, invitá amigos, liquidá apuestas al instante con USDT.
           </p>
+          <Link href="/onboarding" className="btn-gold inline-block mt-6 text-lg px-8 py-3">
+            Empezar
+          </Link>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-bg to-transparent" />
       </div>
@@ -69,8 +72,8 @@ export default function Home() {
               Messi vs Salah en Atlanta. La Pulga busca convertir en 5 partidos consecutivos con la Selección.
               Juntamos la bandera, armamos el asado y creamos un POZO para este partidazo?
             </p>
-            <Link href="/pool" className="btn-gold inline-block text-sm">
-              Crear POZO para Argentina vs Egypt
+            <Link href="/onboarding" className="btn-gold inline-block text-sm">
+              Armar la previa
             </Link>
           </div>
         </div>

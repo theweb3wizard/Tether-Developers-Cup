@@ -1,32 +1,47 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from 'react';
+import { loadIdentity, saveIdentity, generateUserId } from '@/lib/identity';
+import { useToast } from '@/components/Toast';
 
 export default function WalletPage() {
-  const [step, setStep] = useState<"start" | "created" | "dashboard">("start");
-  const [seedPhrase, setSeedPhrase] = useState("");
-  const [address, setAddress] = useState("");
-  const [balance, setBalance] = useState("0");
-  const [usdtBalance, setUsdtBalance] = useState("0");
+  const [step, setStep] = useState<'start' | 'created' | 'dashboard'>('start');
+  const [seedPhrase, setSeedPhrase] = useState('');
+  const [address, setAddress] = useState('');
+  const [balance, setBalance] = useState('0');
+  const [usdtBalance, setUsdtBalance] = useState('0');
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState("");
-  const [sendTo, setSendTo] = useState("");
-  const [sendAmount, setSendAmount] = useState("");
+  const [copied, setCopied] = useState('');
+  const [sendTo, setSendTo] = useState('');
+  const [sendAmount, setSendAmount] = useState('');
   const [sending, setSending] = useState(false);
-  const [txHash, setTxHash] = useState("");
+  const [txHash, setTxHash] = useState('');
+  const [username, setUsername] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const id = loadIdentity();
+    if (id) setUsername(id.username);
+  }, []);
 
   const createWallet = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/wallet/create", { method: "POST" });
+      const res = await fetch('/api/wallet/create', { method: 'POST' });
       const data = await res.json();
       setSeedPhrase(data.seedPhrase);
       setAddress(data.address);
       setBalance(data.balance);
-      setUsdtBalance("0");
-      setStep("created");
+      setUsdtBalance('0');
+
+      const userId = generateUserId();
+      saveIdentity({ userId, username: username || 'Cebolla', address: data.address });
+
+      setStep('created');
+      toast('Wallet creada! Guardá tu seed phrase', 'success');
     } catch (e) {
       console.error(e);
+      toast('Error al crear wallet', 'error');
     }
     setLoading(false);
   };
@@ -34,33 +49,45 @@ export default function WalletPage() {
   const loadWallet = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/wallet/balance");
+      const res = await fetch('/api/wallet/balance');
       const data = await res.json();
       setAddress(data.address);
       setBalance(data.balance);
       setUsdtBalance(data.usdtBalance);
-      setStep("dashboard");
+      setStep('dashboard');
+      toast('Wallet cargada', 'success');
     } catch (e) {
       console.error(e);
+      toast('Error al cargar wallet', 'error');
     }
     setLoading(false);
   };
 
   const sendUsdt = async () => {
     if (!sendTo || !sendAmount) return;
+    if (!sendTo.startsWith('0x') || sendTo.length < 20) {
+      toast('Dirección inválida', 'error');
+      return;
+    }
+    if (Number(sendAmount) <= 0) {
+      toast('Monto inválido', 'error');
+      return;
+    }
     setSending(true);
     try {
-      const res = await fetch("/api/wallet/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/wallet/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to: sendTo, amount: sendAmount }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.details);
       setTxHash(data.hash);
-      setSendTo("");
-      setSendAmount("");
-    } catch (e) {
-      console.error(e);
+      setSendTo('');
+      setSendAmount('');
+      toast('USDT enviado!', 'success');
+    } catch (e: any) {
+      toast(e.message || 'Error al enviar', 'error');
     }
     setSending(false);
   };
@@ -68,7 +95,7 @@ export default function WalletPage() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopied(label);
-    setTimeout(() => setCopied(""), 2000);
+    setTimeout(() => setCopied(''), 2000);
   };
 
   if (loading) {
@@ -92,14 +119,16 @@ export default function WalletPage() {
         <p className="text-gray-500">Auto-custodia. Tus llaves, tus USDt.</p>
       </div>
 
-      {step === "start" && (
+      {step === 'start' && (
         <div className="space-y-4">
           <div className="card space-y-4 group hover:shadow-lg transition-all duration-300">
             <h2 className="font-bold text-lg text-blue">Crear Wallet Nueva</h2>
+            <input className="input-field" placeholder="Tu nombre de usuario" value={username}
+              onChange={(e) => setUsername(e.target.value)} />
             <p className="text-sm text-gray-500 leading-relaxed">
               Generamos una seed phrase única. Guardala en un lugar seguro — nadie más va a tener acceso a tus fondos.
             </p>
-            <button onClick={createWallet} className="btn-primary w-full">
+            <button onClick={createWallet} disabled={!username} className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
               Crear mi Wallet 🇦🇷
             </button>
           </div>
@@ -115,7 +144,7 @@ export default function WalletPage() {
         </div>
       )}
 
-      {step === "created" && (
+      {step === 'created' && (
         <div className="card space-y-5 border-2 border-gold/60 shadow-lg">
           <h2 className="font-bold text-lg text-green-700">✅ Wallet Creada con Éxito</h2>
 
@@ -123,16 +152,15 @@ export default function WalletPage() {
             <label className="text-sm font-semibold text-gray-600">Seed Phrase</label>
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 relative">
               <p className="font-mono text-sm break-all pr-8 leading-relaxed">{seedPhrase}</p>
-              <button onClick={() => copyToClipboard(seedPhrase, "seed")}
+              <button onClick={() => copyToClipboard(seedPhrase, 'seed')}
                 className="absolute top-3 right-3 text-xs bg-yellow-200 hover:bg-yellow-300 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">
-                {copied === "seed" ? "Copiado!" : "Copiar"}
+                {copied === 'seed' ? 'Copiado!' : 'Copiar'}
               </button>
             </div>
             <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
               <span className="text-red-500 font-bold text-sm mt-0.5">⚠️</span>
               <p className="text-xs text-red-600 font-medium leading-relaxed">
                 No la compartas con nadie. Esta frase es la única forma de recuperar tus fondos.
-                Si la perdés, no hay banco que te ayude.
               </p>
             </div>
           </div>
@@ -141,9 +169,9 @@ export default function WalletPage() {
             <label className="text-sm font-semibold text-gray-600">Dirección (Sepolia)</label>
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center justify-between">
               <code className="text-sm font-mono text-gray-700">{address.slice(0, 14)}...{address.slice(-6)}</code>
-              <button onClick={() => copyToClipboard(address, "addr")}
+              <button onClick={() => copyToClipboard(address, 'addr')}
                 className="text-xs bg-gray-200 hover:bg-gray-300 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">
-                {copied === "addr" ? "Copiado!" : "Copiar"}
+                {copied === 'addr' ? 'Copiado!' : 'Copiar'}
               </button>
             </div>
           </div>
@@ -165,7 +193,7 @@ export default function WalletPage() {
         </div>
       )}
 
-      {step === "dashboard" && (
+      {step === 'dashboard' && (
         <div className="space-y-4">
           <div className="card space-y-4 group hover:shadow-lg transition-all duration-300">
             <div className="flex items-center justify-between">
@@ -177,9 +205,9 @@ export default function WalletPage() {
 
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center justify-between">
               <code className="text-sm font-mono text-gray-700">{address.slice(0, 10)}...{address.slice(-6)}</code>
-              <button onClick={() => copyToClipboard(address, "addr")}
+              <button onClick={() => copyToClipboard(address, 'addr')}
                 className="text-xs bg-gray-200 hover:bg-gray-300 font-semibold px-2.5 py-1.5 rounded-lg transition-colors">
-                {copied === "addr" ? "Copiado!" : "Copiar"}
+                {copied === 'addr' ? 'Copiado!' : 'Copiar'}
               </button>
             </div>
 
@@ -201,7 +229,7 @@ export default function WalletPage() {
               <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 text-sm space-y-2">
                 <p className="font-semibold text-green-700">✅ Transacción enviada!</p>
                 <code className="font-mono text-xs text-gray-600 break-all">{txHash}</code>
-                <button onClick={() => setTxHash("")} className="block text-celeste-dark font-semibold text-xs mt-1 hover:underline">
+                <button onClick={() => setTxHash('')} className="block text-celeste-dark font-semibold text-xs mt-1 hover:underline">
                   Enviar otro
                 </button>
               </div>
@@ -211,9 +239,9 @@ export default function WalletPage() {
                   onChange={(e) => setSendTo(e.target.value)} />
                 <input className="input-field" type="number" placeholder="Cantidad USDt" value={sendAmount}
                   onChange={(e) => setSendAmount(e.target.value)} min={0} step={0.01} />
-                <button onClick={sendUsdt} disabled={sending || !sendTo || !sendAmount}
+                <button onClick={sendUsdt} disabled={sending || !sendTo || !sendAmount || Number(sendAmount) <= 0}
                   className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
-                  {sending ? "Enviando..." : `Enviar ${sendAmount || ''} USDT`}
+                  {sending ? 'Enviando...' : `Enviar ${sendAmount || ''} USDT`}
                 </button>
               </>
             )}

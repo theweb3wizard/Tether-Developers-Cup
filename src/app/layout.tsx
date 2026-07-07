@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,10 +57,12 @@ export default function RootLayout({
           <div className="flex items-center gap-3">
             <a href="/wallet" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Wallet</a>
             <a href="/pool" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">POZO</a>
+            <a href="/pool" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">POZO</a>
+            <a href="/history" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Historial</a>
             <a href="/asado" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Asado</a>
           </div>
         </nav>
-        <main className="flex-1">{children}</main>
+        <main className="flex-1"><ToastProvider>{children}</ToastProvider></main>
         <footer className="bg-blue text-white text-center text-xs py-4">
           ⚽ POZO — Tether Developers Cup 2026
         </footer>
