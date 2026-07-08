@@ -5,6 +5,9 @@
 **Tether Developers Cup · 2026 FIFA World Cup Hackathon**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-live-00D084)](https://tether-developers-cup.vercel.app/)
+
+> ⚠️ **Live but incomplete:** The app is deployed and fully browsable at [tether-developers-cup.vercel.app](https://tether-developers-cup.vercel.app/). The on-chain settlement flow (USDT payouts) requires a funded Sepolia wallet I haven't set up — the architecture is wired, the code compiles, but live transactions won't execute. See [Known Gaps](#known-gaps-hackathon-scope).
 
 ---
 
