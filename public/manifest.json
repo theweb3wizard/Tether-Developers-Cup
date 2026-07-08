@@ -1,11 +1,11 @@
 {
-  "name": "La Albiceleste Fan Wallet",
-  "short_name": "Albiceleste",
+  "name": "POZO — Albiceleste Fan Wallet",
+  "short_name": "POZO",
   "description": "Self-custodial watch party pools for La Albiceleste — powered by Tether WDK",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F0F4F8",
-  "theme_color": "#75AADB",
+  "background_color": "#070C18",
+  "theme_color": "#070C18",
   "orientation": "portrait",
   "icons": [
     {

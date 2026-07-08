@@ -1,188 +1,141 @@
-# POZO — Self-Custodial Watch Party Pools
+# 🇦🇷 POZO — Albiceleste Fan Wallet
 
-**Tether Developers Cup 2026 — WDK Track**
+> Self-custodial watch party pools for La Albiceleste — powered by **Tether WDK**
 
-POZO lets Argentina fans create **self-custodial USDT pools** for World Cup watch parties. Create a pool, invite friends, predict in-game events (goals, cards, saves), and settle instantly — no intermediaries, no gas fees, full self-custody.
+**Tether Developers Cup · 2026 FIFA World Cup Hackathon**
 
----
-
-## Features
-
-### Phase 0 — MVP
-- Self-custodial wallet via Tether WDK (EVM, Sepolia testnet)
-- POZO creation with configurable stake, capacity, and trigger events
-- PWA manifest (installable, theme-color, icons)
-
-### Phase 1 — Core
-- Send/receive USDT via WDK
-- Multi-party POZO fund locking
-- Trigger event system (goals, cards, saves as configurable pool events)
-- Group consensus voting — majority-tap verification (no oracle)
-- USDt distribution engine — winners determined on consensus
-- El Asado Fund — watch party expense splitter
-- @username identities — human-readable names, no hex addresses
-- Supabase persistence (Postgres, JSONB columns, RLS)
-
-### Phase 2 — Polish
-- Illustrated cábala onboarding flow (`/onboarding`)
-- Identity persistence via localStorage
-- Toast notification system
-- Skeleton loaders on all data pages
-- Supabase Realtime subscriptions for live voting
-- Pool history & stats with ranking (`/history`)
-- Micro-bid system on event voting
-- Share POZO link (clipboard copy)
-- Browser notifications for event updates
-- Direct pool detail page (`/pool/[id]`)
-- PWA service worker (offline cache + install prompt)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
-## Tech Stack
+## What is POZO?
 
-| Layer | Technology |
+POZO is a mobile-first PWA that turns every Argentina World Cup watch party into a live, self-custodial USDT betting experience. Friends create a **POZO** (pool), stake USDT, vote on in-match events in real time, and winners receive instant on-chain payouts — no custodian, no bank, no gas tokens required.
+
+### The Problem It Solves
+
+Argentine fans split asado costs over 7 different apps, make verbal bets that never get paid, and have no way to settle cross-border payments during a live match. POZO collapses expense splitting, P2P micro-wagering, and instant USDT settlement into a single WDK-powered product.
+
+---
+
+## Core Features
+
+| Feature | Description |
 |---|---|
-| Frontend | Next.js 16, Tailwind CSS v4, TypeScript |
-| Database | Supabase (Postgres, JSONB, RLS) |
-| Wallets | `@tetherto/wdk`, `@tetherto/wdk-wallet-evm` |
-| PWA | Service worker, Web Manifest |
-| Styling | Argentina flag palette (#75AADB, #FCBF49, #003DA5) |
-| Language | Español (Argentine dialect) |
+| **POZO Pools** | Create multi-party event-triggered pools. Set stake, capacity and events. Share a link. |
+| **Live Match Widget** | Real-time Argentina scores via ESPN public API, refreshed every 30s. |
+| **Self-Custodial Wallets** | WDK-generated wallets with seed phrase backup. Users own their keys. |
+| **Real USDT Settlement** | On pool resolution, the house wallet distributes USDT to winners on-chain (Sepolia testnet). Etherscan links shown in UI. |
+| **Asado Fund** | Pre-match expense splitter — pay asado, beer and streaming costs in USDT before kickoff. |
+| **Join via Link** | Share a pool URL. New users join inline without leaving the page. |
+| **PWA** | Installable on iOS/Android, offline-capable via service worker. |
+| **Cábalas** | Argentine match-day superstition system woven into onboarding and player identity. |
 
 ---
 
-## Getting Started
+## WDK Integration
 
-### Prerequisites
+This project uses Tether's Wallet Development Kit across three distinct surfaces:
 
-- Node.js 20+
-- npm
-- Supabase project with the schema from `supabase-migration.sql`
+1. **User wallet creation** — `WDK.getRandomSeedPhrase()` + `WalletManagerEvm` to derive a self-custodial EVM address during onboarding. Users own their keys.
 
-### Environment Variables
+2. **Wallet restoration** — Users can restore any existing wallet from seed phrase via the `/wallet` page's restore flow.
 
-```bash
-cp .env.example .env.local
-```
+3. **Pool settlement / USDT distribution** — A server-side "house" wallet (configured via `POOL_MASTER_SEED`) calls `account.transfer()` for each winner when a pool is settled. Transaction hashes are stored in Supabase and displayed as Sepolia Etherscan links in the settled pool card.
 
-Fill in your Supabase project URL and anon key from your Supabase dashboard (Settings → API).
-
-### Install
-
-```bash
-npm install
-```
-
-> **Windows note:** npm install can be flaky (ECONNRESET, EPERM). If it fails:
-> ```powershell
-> npm config set registry https://registry.npmmirror.com
-> npm install
-> npm config set registry https://registry.npmjs.org
-> ```
-
-### Run
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Build
-
-```bash
-npm run build
-```
-
----
-
-## Database
-
-The app uses Supabase. Run `supabase-migration.sql` in your Supabase SQL Editor to create:
-
-- **users** — username, wallet_address, cábala, timestamps
-- **pools** — JSONB `participants` and `events` columns, status enum
-- **asado_bills** — TEXT[] participants, JSONB expenses
-
-**After migration**, enable Realtime on the `pools` table: Supabase Dashboard → Database → Replication → toggle `pools`.
+**Packages used:**
+- `@tetherto/wdk` — core SDK, seed generation
+- `@tetherto/wdk-wallet` — `IWalletAccount` interface
+- `@tetherto/wdk-wallet-evm` — Ethereum/Sepolia wallet manager
 
 ---
 
 ## Architecture
 
 ```
-PWA (Next.js 16)
-  ↕ REST API
-Node.js Backend
-  └── lib/
-       ├── wdk.ts          → Wallet ops, USDt transfers
-       ├── pools.ts        → Pool logic, fund locking, consensus
-       ├── asado.ts        → Expense splitting
-       ├── supabase.ts     → DB client
-       ├── identity.ts     → localStorage identity
-       └── notifications.ts → Browser Notification API
+Next.js 16 App Router (PWA)
+├── /src/app/             Pages (home, pool, wallet, asado, history, onboarding)
+├── /src/app/api/         API routes (pools, wallet, matches, seed)
+├── /src/components/      UI components (PoolDetail, LiveMatchWidget, Toast, BottomNav)
+├── /src/lib/
+│   ├── wdk.ts            WDK wallet operations (create, restore, distribute payouts)
+│   ├── wdk-server.ts     Server-only helper (master wallet address)
+│   ├── pools.ts          Pool CRUD + voting/settlement logic (Supabase)
+│   ├── fixtures.ts       Argentina fixture list + live score types
+│   ├── identity.ts       LocalStorage-based user identity
+│   └── supabase.ts       Supabase client
+└── Supabase              PostgreSQL: pools table (JSONB for participants/events)
 ```
 
-### API Routes
+---
 
-| Route | Method | Description |
+## Local Setup
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+cp .env.example .env.local
+# Fill in NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# 3. Run Supabase migration
+# Open https://supabase.com/dashboard → SQL Editor → paste supabase-migration.sql
+
+# 4. Configure the pool distribution wallet
+# a) Start dev server: npm run dev
+# b) Go to /wallet → Create Wallet → copy the seed phrase
+# c) Add it to .env.local as POOL_MASTER_SEED="word1 word2 ..."
+# d) Copy the derived address
+# e) Fund it with Sepolia USDT:
+#    - ETH:  https://faucets.chain.link/sepolia
+#    - USDT: https://faucet.circle.com (select Ethereum Sepolia)
+
+# 5. Seed demo data (optional)
+# POST http://localhost:3000/api/seed
+
+# 6. Run dev server
+npm run dev
+```
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
 |---|---|---|
-| `/api/wallet/create` | POST | Generate seed phrase + EVM wallet |
-| `/api/wallet/balance` | GET | Get address, ETH & USDT balance |
-| `/api/wallet/send` | POST | Send USDT via WDK |
-| `/api/pools` | GET | List all POZOs (`?status=settled` to filter) |
-| `/api/pools/create` | POST | Create new POZO |
-| `/api/pools/[id]` | GET | Get POZO details |
-| `/api/pools/[id]` | PATCH | Join, lock, or start POZO |
-| `/api/pools/[id]/trigger` | POST | Vote or resolve event |
-| `/api/pools/[id]/distribute` | POST | Settle POZO, distribute funds |
-| `/api/asado` | GET/POST | Create & manage expense splits |
-
-### Pages
-
-| Route | Page |
-|---|---|
-| `/` | Landing with hero, 3-card nav, match callout |
-| `/onboarding` | 3-step: welcome → identity → cábala picker |
-| `/wallet` | Create/load wallet, dashboard, send USDT |
-| `/pool` | Pool list, create, detail with voting flow |
-| `/pool/[id]` | Direct pool detail (shared links) |
-| `/history` | Settled pools + ranking |
-| `/asado` | Expense splitter |
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Supabase anon/public key |
+| `POOL_MASTER_SEED` | ✅ for live transfers | 12-word seed phrase for the house distribution wallet |
+| `SEED_ENABLED` | Optional | Set `true` to allow `POST /api/seed` in production |
 
 ---
 
-## POZO Flow
+## Tournament Context
 
-1. **Create** — Host sets name, stake (USDT), capacity, trigger events
-2. **Invite** — Share POZO link with friends
-3. **Join** — Friends deposit stake from their wallets
-4. **Lock** — Host locks pool at match start
-5. **Watch** — Events fire (goal, card, save)
-6. **Vote** — Group confirms events via majority tap
-7. **Resolve** — Host declares winner per event
-8. **Settle** — Funds distributed to winners
+Built during the **2026 FIFA World Cup** knockout rounds:
+- 🇦🇷 Argentina 3–2 Egypt (R16, Jul 7 — Messi's 8th goal of the tournament)
+- 🇦🇷 Argentina vs 🇨🇭 Switzerland — QF, **Jul 11, Kansas City**
+- 🇦🇷 Semifinal — Jul 14, Arlington TX
+- 🇦🇷 **Final — Jul 19, MetLife Stadium NJ**
 
 ---
 
-## Demo Video
+## Tech Stack
 
-[YouTube link — coming soon]
-
----
-
-## Submission
-
-- **Track**: WDK
-- **Team**: Solo
-- **Country**: Argentina
-- **License**: MIT
+- **Next.js 16** with Turbopack
+- **Tether WDK** (`@tetherto/wdk`, `wdk-wallet-evm`)
+- **Supabase** (PostgreSQL + Realtime)
+- **Tailwind CSS v4**
+- **lucide-react** icons
+- ESPN public scoreboard API (no key required)
 
 ---
 
-## Built With
+## License
 
-- [Tether WDK](https://docs.wallet.tether.io) — Wallet Development Kit
-- [Next.js](https://nextjs.org) — React framework
-- [Tailwind CSS](https://tailwindcss.com) — Styling
-- [Supabase](https://supabase.com) — Database & Realtime
+[MIT](LICENSE) — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for third-party disclosures.
+
+---
+
+*Built with mate amargo and De Paul's caramelos. Vamos Argentina. 🏆*

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createBill, addExpense, listBills, getBill, calculateSplits } from '@/lib/asado';
+import { createBill, addExpense, listBills, calculateSplits } from '@/lib/asado';
 
 export async function GET() {
   return NextResponse.json(await listBills());

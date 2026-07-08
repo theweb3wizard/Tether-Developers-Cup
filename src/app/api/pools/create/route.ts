@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const pool = await createPool({
       name: body.name || `Pozo ${new Date().toLocaleDateString('es-AR')}`,
-      match: body.match || 'Argentina vs Egypt — R16',
+      match: body.match || 'Argentina vs Switzerland/Colombia — QF',
       stake: Number(body.stake) || 5,
       capacity: Number(body.capacity) || 6,
       events: body.events || ['Messi gol'],

@@ -1,18 +1,9 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
   title: "POZO — Albiceleste Fan Wallet",
@@ -29,44 +20,81 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#070C18",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="es" className="h-full antialiased">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="theme-color" content="#75AADB" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* Premium font preconnects */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
-      <body className="min-h-full flex flex-col">
-        <nav className="argentina-flag px-4 py-2.5 flex items-center justify-between shadow-sm sticky top-0 z-50">
-          <a href="/" className="flex items-center gap-2.5 group">
-            <img
-              src="/IMG/hero-icon.png"
-              alt="POZO"
-              className="w-8 h-8 rounded-xl group-hover:scale-110 transition-transform duration-300"
-            />
-            <span className="font-bold text-blue text-lg">POZO</span>
-          </a>
-          <div className="flex items-center gap-3">
-            <a href="/wallet" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Wallet</a>
-            <a href="/pool" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">POZO</a>
-            <a href="/history" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Historial</a>
-            <a href="/asado" className="text-sm font-semibold text-blue hover:text-celeste-dark transition-colors px-2 py-1">Asado</a>
-          </div>
-        </nav>
+      <body className="min-h-full flex flex-col" style={{ background: 'var(--bg-surface)' }}>
         <ServiceWorkerRegistration />
-        <main className="flex-1"><ToastProvider>{children}</ToastProvider></main>
-        <footer className="bg-blue text-white text-center text-xs py-4">
-          ⚽ POZO — Tether Developers Cup 2026
-        </footer>
+        <ToastProvider>
+          {/* Premium Header */}
+          <header
+            className="fixed top-0 left-0 right-0 z-40 h-14 px-4 flex items-center justify-between"
+            style={{
+              background: 'rgba(7,12,24,0.85)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+            }}
+          >
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div
+                className="w-8 h-8 rounded-xl overflow-hidden transition-all duration-300"
+                style={{
+                  boxShadow: '0 0 0 1px rgba(99,195,255,0.2)',
+                }}
+              >
+                <img src="/IMG/hero-icon.png" alt="POZO" className="w-full h-full object-cover" />
+              </div>
+              <span
+                className="font-display text-xl tracking-tight"
+                style={{
+                  background: 'linear-gradient(135deg, #89D6FF 0%, #63C3FF 60%, #2EA8F0 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                POZO
+              </span>
+            </Link>
+
+            <div className="flex items-center gap-2">
+              <span
+                className="badge badge-active"
+                style={{ fontSize: '0.65rem' }}
+              >
+                Partido en vivo
+              </span>
+            </div>
+          </header>
+
+          <main className="flex-1 pt-14 pb-20">{children}</main>
+          <BottomNav />
+        </ToastProvider>
       </body>
     </html>
   );

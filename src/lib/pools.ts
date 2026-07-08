@@ -31,6 +31,7 @@ export type Pool = {
   created: number
   hostId: string
   settledAt?: string
+  txHashes?: string[]
 }
 
 type PoolRow = {
@@ -46,6 +47,7 @@ type PoolRow = {
   host_id: string
   created_at: string
   settled_at?: string | null
+  tx_hashes?: string[] | null
 }
 
 function rowToPool(row: PoolRow): Pool {
@@ -62,6 +64,7 @@ function rowToPool(row: PoolRow): Pool {
     created: new Date(row.created_at).getTime(),
     hostId: row.host_id,
     settledAt: row.settled_at ?? undefined,
+    txHashes: row.tx_hashes ?? undefined,
   }
 }
 
@@ -270,7 +273,8 @@ export async function resolveEvent(
 }
 
 export async function settlePool(
-  poolId: string
+  poolId: string,
+  txHashes?: string[]
 ): Promise<{
   pool: Pool
   payouts: { participantId: string; amount: number }[]
@@ -287,9 +291,17 @@ export async function settlePool(
     return { participantId: p.id, amount }
   })
 
+  const updateData: Record<string, unknown> = {
+    status: 'settled',
+    settled_at: new Date().toISOString(),
+  }
+  if (txHashes && txHashes.length > 0) {
+    updateData.tx_hashes = txHashes
+  }
+
   const { data, error } = await supabase
     .from('pools')
-    .update({ status: 'settled', settled_at: new Date().toISOString() })
+    .update(updateData)
     .eq('id', poolId)
     .select()
     .single()

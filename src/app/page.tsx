@@ -1,81 +1,228 @@
-import Link from "next/link";
+'use client';
+
+import Link from 'next/link';
+import LiveMatchWidget from '@/components/LiveMatchWidget';
+import { getCurrentMatch } from '@/lib/fixtures';
+
+const FEATURES = [
+  {
+    href: '/wallet',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+      </svg>
+    ),
+    title: 'Wallet',
+    desc: 'Auto-custodia. Tus llaves, tus USDt.',
+    badge: 'Crear',
+    color: 'var(--celeste)',
+    dimColor: 'rgba(99,195,255,0.08)',
+    borderColor: 'rgba(99,195,255,0.15)',
+  },
+  {
+    href: '/pool',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+        <circle cx="12" cy="8" r="6" />
+        <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+      </svg>
+    ),
+    title: 'POZOs',
+    desc: 'Pools de apuestas entre amigos.',
+    badge: 'Armar',
+    color: 'var(--gold)',
+    dimColor: 'rgba(255,209,102,0.08)',
+    borderColor: 'rgba(255,209,102,0.15)',
+  },
+  {
+    href: '/asado',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+        <path d="M12 2a5 5 0 00-5 5v3H5a2 2 0 00-2 2v2a2 2 0 002 2h14a2 2 0 002-2v-2a2 2 0 00-2-2h-2V7a5 5 0 00-5-5z" />
+        <path d="M8 21h8M12 17v4" />
+      </svg>
+    ),
+    title: 'Asado Fund',
+    desc: 'Dividí los gastos de la previa.',
+    badge: 'Dividir',
+    color: 'var(--violet)',
+    dimColor: 'rgba(155,127,255,0.08)',
+    borderColor: 'rgba(155,127,255,0.15)',
+  },
+];
+
+const HIGHLIGHTS = [
+  { label: 'Sin registro', desc: 'Tu identidad vive en tu navegador', icon: '🔒' },
+  { label: 'USDT directo', desc: 'Pools liquidados al instante', icon: '⚡' },
+  { label: 'Auto-custodia', desc: 'Vos tenés las llaves', icon: '🔑' },
+];
 
 export default function Home() {
+  const currentMatch = getCurrentMatch();
+  const matchBadgeText = currentMatch
+    ? `🇦🇷 ${currentMatch.homeTeam} vs ${currentMatch.awayTeam} — ${currentMatch.round}`
+    : '🇦🇷 Argentina — Próximo partido';
+
   return (
-    <div className="flex flex-col items-center min-h-[calc(100vh-120px)]">
-      <div className="w-full argentina-gradient overflow-hidden relative">
-        <div className="max-w-2xl mx-auto px-4 py-16 md:py-24 text-center relative z-10">
-          <img
-            src="/IMG/hero-icon.png"
-            alt="POZO App Icon"
-            className="w-28 h-28 md:w-36 md:h-36 mx-auto mb-8 drop-shadow-2xl animate-float"
-          />
-          <h1 className="text-5xl md:text-7xl font-black text-blue leading-tight mb-4">
+    <div className="flex flex-col items-center min-h-full">
+
+      {/* ── HERO ───────────────────────────────────────────────── */}
+      <section className="w-full relative overflow-hidden">
+        {/* Aurora background */}
+        <div
+          className="absolute inset-0 stripe-texture"
+          style={{
+            background:
+              'radial-gradient(ellipse 100% 70% at 50% -10%, rgba(99,195,255,0.14) 0%, transparent 65%), ' +
+              'radial-gradient(ellipse 60% 40% at 90% 100%, rgba(155,127,255,0.08) 0%, transparent 60%)',
+          }}
+        />
+        {/* Fade bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-32"
+          style={{ background: 'linear-gradient(to bottom, transparent, var(--bg-surface))' }} />
+
+        <div className="max-w-2xl mx-auto px-4 py-16 md:py-20 text-center relative z-10">
+
+          {/* Match badge — dynamic */}
+          <div className="flex items-center justify-center mb-6">
+            <span
+              className="badge badge-active px-4 py-1.5"
+              style={{ fontSize: '0.72rem' }}
+            >
+              {matchBadgeText}
+            </span>
+          </div>
+
+          {/* Hero icon */}
+          <div
+            className="w-24 h-24 md:w-28 md:h-28 mx-auto mb-6 rounded-3xl overflow-hidden animate-float"
+            style={{ boxShadow: '0 0 0 1px rgba(99,195,255,0.15), 0 0 40px rgba(99,195,255,0.12), 0 20px 60px rgba(0,0,0,0.5)' }}
+          >
+            <img src="/IMG/hero-icon.png" alt="POZO" className="w-full h-full object-cover" />
+          </div>
+
+          {/* Wordmark */}
+          <h1
+            className="font-hero leading-none mb-3"
+            style={{
+              fontSize: 'clamp(5rem, 18vw, 7.5rem)',
+              background: 'linear-gradient(160deg, #FFFFFF 0%, #89D6FF 40%, #63C3FF 70%, #9B7FFF 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textShadow: 'none',
+              letterSpacing: '0.06em',
+            }}
+          >
             POZO
           </h1>
-          <p className="text-lg md:text-xl text-blue/70 max-w-md mx-auto font-medium">
-            Pools auto-custodios para la Scaloneta. Creá tu POZO, invitá amigos, liquidá apuestas al instante con USDT.
+
+          <p
+            className="text-base md:text-lg max-w-sm mx-auto leading-relaxed mb-8"
+            style={{ color: 'var(--text-secondary)', fontWeight: 400 }}
+          >
+            Pools para la Scaloneta. Creá tu POZO, invitá amigos, liquidá apuestas al toque con USDT.
           </p>
-          <Link href="/onboarding" className="btn-gold inline-block mt-6 text-lg px-8 py-3">
-            Empezar
-          </Link>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-bg to-transparent" />
-      </div>
 
-      <div className="max-w-2xl w-full px-4 -mt-6 space-y-6 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/wallet" className="card text-center space-y-3 group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-            <div className="w-14 h-14 rounded-2xl bg-celeste/10 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-7 h-7 text-celeste-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="font-bold text-blue">Wallet</h3>
-            <p className="text-sm text-gray-500 leading-snug">Crea tu wallet auto-custodia al instante</p>
-            <span className="btn-primary inline-block mt-1 text-sm">Abrir Wallet</span>
-          </Link>
-
-          <Link href="/pool" className="card text-center space-y-3 group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-            <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-7 h-7 text-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <h3 className="font-bold text-blue">POZO</h3>
-            <p className="text-sm text-gray-500 leading-snug">Pools de apuestas entre amigos</p>
-            <span className="btn-gold inline-block mt-1 text-sm">Crear POZO</span>
-          </Link>
-
-          <Link href="/asado" className="card text-center space-y-3 group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="font-bold text-blue">Asado Fund</h3>
-            <p className="text-sm text-gray-500 leading-snug">Dividí los gastos de la previa</p>
-            <span className="btn-primary inline-block mt-1 text-sm">Abrir Asado</span>
-          </Link>
-        </div>
-
-        <div className="card bg-gradient-to-br from-celeste/10 via-white to-gold/10 border border-celeste/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-celeste/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm bg-blue text-white px-3 py-1 rounded-full font-semibold">EN VIVO</span>
-              <span className="text-sm text-gray-500">7 de Julio</span>
-            </div>
-            <h3 className="font-bold text-xl text-blue mb-2">Argentina vs Egypt — R16</h3>
-            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-              Messi vs Salah en Atlanta. La Pulga busca convertir en 5 partidos consecutivos con la Selección.
-              Juntamos la bandera, armamos el asado y creamos un POZO para este partidazo?
-            </p>
-            <Link href="/onboarding" className="btn-gold inline-block text-sm">
-              Armar la previa
+          <div className="flex items-center justify-center gap-3">
+            <Link href="/onboarding" className="btn btn-gold px-8 py-3 text-base">
+              Arrancar
+            </Link>
+            <Link href="/pool" className="btn btn-ghost px-6 py-3 text-base">
+              Ver POZOs
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* ── CONTENT ────────────────────────────────────────────── */}
+      <div className="max-w-2xl w-full px-4 -mt-2 space-y-4 pb-8 stagger">
+
+        {/* Feature cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {FEATURES.map((f) => (
+            <Link
+              key={f.href}
+              href={f.href}
+              className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
+              style={{
+                background: `linear-gradient(145deg, ${f.dimColor} 0%, var(--bg-card) 70%)`,
+                border: `1px solid ${f.borderColor}`,
+                boxShadow: 'var(--shadow-card)',
+              }}
+            >
+              <div
+                className="absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ background: `radial-gradient(circle, ${f.dimColor} 0%, transparent 70%)` }}
+              />
+              <div className="relative z-10">
+                <div className="mb-3" style={{ color: f.color }}>
+                  {f.icon}
+                </div>
+                <h3 className="font-display text-base text-white mb-1">{f.title}</h3>
+                <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--text-tertiary)' }}>{f.desc}</p>
+                <span
+                  className="inline-flex items-center gap-1 text-xs font-semibold transition-all duration-200 group-hover:gap-2"
+                  style={{ color: f.color, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}
+                >
+                  {f.badge}
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+                    <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Live match widget — replaces hardcoded promo card */}
+        <div
+          className="relative overflow-hidden rounded-2xl p-1"
+          style={{
+            background: 'linear-gradient(145deg, rgba(99,195,255,0.05) 0%, var(--bg-card) 60%)',
+            border: '1px solid var(--border-accent)',
+            boxShadow: 'var(--shadow-card)',
+          }}
+        >
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Partido</span>
+            </div>
+            <LiveMatchWidget compact={false} />
+            <Link href="/onboarding" className="btn btn-gold text-sm w-full">
+              Armar la previa 🥩
+            </Link>
+          </div>
+        </div>
+
+        {/* Highlights row */}
+        <div className="grid grid-cols-3 gap-3">
+          {HIGHLIGHTS.map((h) => (
+            <div
+              key={h.label}
+              className="rounded-2xl p-4 text-center"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-white)',
+                boxShadow: 'var(--shadow-card)',
+              }}
+            >
+              <span className="text-xl mb-2 block">{h.icon}</span>
+              <p
+                className="font-display text-xs mb-1"
+                style={{
+                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                {h.label}
+              </p>
+              <p className="text-[10px] leading-tight" style={{ color: 'var(--text-tertiary)' }}>{h.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
