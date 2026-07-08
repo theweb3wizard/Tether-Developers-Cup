@@ -132,6 +132,18 @@ Built during the **2026 FIFA World Cup** knockout rounds:
 
 ---
 
+## Known Gaps (Hackathon Scope)
+
+POZO was built for the Tether Developers Cup in ~48 hours. These areas are intentionally scoped out and documented here so the architecture is clear:
+
+- **No server-side auth** — User identity is localStorage-based and self-asserted. A production version would add wallet-signature-based authentication via WDK or Supabase Auth.
+- **Open RLS policies** — Supabase Row-Level Security allows public access. Production would lock this down with per-wallet policies.
+- **Centralized house wallet** — Payouts flow from a single master wallet rather than peer-to-peer. Production would use direct transfers or a smart contract escrow.
+- **No test suite** — Integration tests were deferred to the next round of the competition.
+- **iOS PWA icon** — The app uses SVG icons; iOS requires PNG for `apple-touch-icon`. A PNG conversion is needed for full iOS PWA support.
+
+These are all known, deliberate trade-offs for the hackathon timeline, not architectural oversights.
+
 ## License
 
 [MIT](LICENSE) — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for third-party disclosures.

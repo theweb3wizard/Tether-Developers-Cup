@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
-    apple: "/icon-192.png",
+    apple: "/icon-192.svg",
   },
   openGraph: {
     title: "POZO — Albiceleste Fan Wallet",
